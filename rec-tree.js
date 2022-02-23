@@ -13,6 +13,8 @@ const params = {
   branchesAngleVariation: 40,
   treesAmount: 10,
   depth: 0,
+  sectionedBranching: true,
+  branchSections: 5,
 };
 
 const createPane = (manager) => {
@@ -51,6 +53,13 @@ const createPane = (manager) => {
     max: 20,
     step: 0.1,
   });
+  folder.addInput(params, "sectionedBranching");
+  folder.addInput(params, "branchSections", {
+    min: 2,
+    max: 20,
+    step: 1
+  });
+
 
   pane.on("change", () => {
     manager.render();
@@ -66,20 +75,25 @@ class Tree {
 
   draw(context) {
     context.fillStyle = "black";
-    // context.fillRect(0,0,this.w, this.h)
-    context.beginPath();
-    const nodes = 5;
-    
-    for (let i = 0; i < nodes; i++) {
-      context.save();
-      context.translate(0, (this.h / nodes) * i);
-      context.rotate((random.rangeFloor(-10, 10) * Math.PI) / 180);
-      context.lineWidth = this.w / (i + 1);
-      context.lineTo(this.w, this.h / nodes);
-      context.stroke();
-      context.restore();
+    if (params.sectionedBranching) {
+      context.beginPath();
+      const nodes = params.branchSections;
+      
+      for (let i = 0; i < nodes; i++) {
+        context.save();
+        context.translate(0, (this.h / nodes) * i);
+        context.rotate((random.rangeFloor(-10, 10) * Math.PI) / 180);
+        context.lineWidth = this.w / (i + 1);
+        context.lineTo(this.w, this.h / nodes);
+        context.stroke();
+        context.restore();
+      }
+      context.closePath();
+
+    } else {
+
+      context.fillRect(0,0,this.w, this.h)
     }
-    context.closePath();
   }
 }
 
