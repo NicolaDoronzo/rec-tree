@@ -15,6 +15,7 @@ const params = {
   depth: 0,
   sectionedBranching: true,
   branchSections: 5,
+  grassEffect: true
 };
 
 const createPane = (manager) => {
@@ -59,7 +60,7 @@ const createPane = (manager) => {
     max: 20,
     step: 1
   });
-
+  folder.addInput(params, "grassEffect");
 
   pane.on("change", () => {
     manager.render();
@@ -124,7 +125,7 @@ const sketch = () => {
     context.rotate(Math.PI);
     for (let i = 0; i < params.treesAmount; i++) {
       context.save();
-      context.translate((width / params.treesAmount) * -i, -height);
+      context.translate((width / params.treesAmount) * -i, -height * 1.1);
       context.rotate(
         (random.rangeFloor(
           -params.mainBranchAngleVariation,
@@ -133,7 +134,6 @@ const sketch = () => {
           Math.PI) /
           180
       );
-      context.scale(1.5, 1.5);
       const depth = random.range(1 / (params.depth * 10), params.depth / 10 + 1); 
       context.scale(
         depth,
@@ -168,7 +168,7 @@ function buildTree(levels = 5, w = 10, h = 400) {
           buildTree(
             levels - 1,
             w * (levels / (levels + 1 + j)),
-            h - (h / levels * j + 1)
+            params.grassEffect ? h / levels / (j + 1) : h - (h / levels * j + 1)
           )
         )
     );
