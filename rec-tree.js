@@ -2,8 +2,10 @@ const canvasSketch = require("canvas-sketch");
 const random = require("canvas-sketch-util/random");
 const Pane = require("tweakpane").Pane;
 const settings = {
-  width: 2048,
-  height: 1024
+  width: 2880,
+  height: 1800,
+  renderAfter: 700,
+  stutter: 0
 };
 
 const params = {
@@ -19,12 +21,17 @@ const params = {
   grassEffect: false,
   clearColor: { r: 255, g: 255, b: 255, a: 1 },
   treeColor: { r: 0, g: 0, b: 0, a: 1 },
+  randomTreeDistributionFactor: 0
 };
 
 const createPane = (manager) => {
   const pane = new Pane();
   let folder;
   folder = pane.addFolder({ title: "Forest" });
+  folder.addInput(params, 'randomTreeDistributionFactor', {
+    min: 0,
+    max: 100
+  })
   folder.addInput(params, "levels", {
     min: 3,
     max: 10,
@@ -68,6 +75,14 @@ const createPane = (manager) => {
   folder.addInput(params, "treeColor");
   folder.addInput(settings, 'width')
   folder.addInput(settings, 'height')
+  folder.addInput(settings, 'renderAfter', {
+    min: 50, 
+    max: 5000
+  })
+  folder.addInput(settings, 'stutter', {
+    min: 0,
+    max: 100
+  })
   pane.on("change", (ev) => {
     manager.update({ dimensions: [settings.width, settings.height]})
     manager.render();
@@ -166,8 +181,10 @@ class Tree {
     context.save();
     context.rotate(Math.PI);
     for (let i = 0; i < params.treesAmount; i++) {
+      const segment = width / params.treesAmount;
+      const offset = segment * params.randomTreeDistributionFactor / 100;
       context.save();
-      context.translate((width / params.treesAmount) * -i, -height);
+      context.translate(segment * -i + random.rangeFloor(-offset, offset), -height);
       context.rotate(
         (random.rangeFloor(
           -params.mainBranchAngleVariation,
@@ -203,7 +220,7 @@ const start = async () => {
 
 let currentFrameTs = 0;
 const rafce = (m, elapsed) => {
-  if (elapsed - currentFrameTs > 50) {
+  if (elapsed - currentFrameTs > (settings.renderAfter + random.rangeFloor(-settings.renderAfter * settings.stutter / 100, settings.renderAfter * settings.stutter / 100))) {
     m.render();
     currentFrameTs = elapsed;
   }
