@@ -2,7 +2,7 @@ const canvasSketch = require("canvas-sketch");
 const random = require("canvas-sketch-util/random");
 const Pane = require("tweakpane").Pane;
 const settings = {
-  dimensions: [2048, 2048],
+  dimensions: [2048, 1024],
   animate: false,
 };
 
@@ -122,10 +122,10 @@ class Tree {
   }
 
   /**
-   * 
-   * @param {*} levels 
-   * @param {*} w 
-   * @param {*} h 
+   *
+   * @param {*} levels
+   * @param {*} w
+   * @param {*} h
    * @returns {Tree}
    */
   static build(levels = params.levels, w = params.width, h = params.height) {
@@ -137,26 +137,26 @@ class Tree {
         w,
         h
       )(
-        [...new Array(random.rangeFloor(2, 5))]
-          .map((_, j) =>
-            Tree.build(
-              levels - 1,
-              w * (levels / (levels + 1 + j)),
-              params.grassEffect
-                ? h / levels / (j + 1)
-                : h - ((h / levels) * j + 1)
-            )
+        [...new Array(random.rangeFloor(2, 5))].map((_, j) =>
+          Tree.build(
+            levels - 1,
+            w * (levels / (levels + 1 + j)),
+            params.grassEffect
+              ? h / levels / (j + 1)
+              : h - ((h / levels) * j + 1)
           )
+        )
       );
     }
   }
-}
 
-const sketch = () => {
   /**
-   * @param {{ context: CanvasRenderingContext2D, width: number, height: number }}
+   *
+   * @param {CanvasRenderingContext2D} context
+   * @param {number} widht
+   * @param {height} height
    */
-  return ({ context, width, height }) => {
+  static drawScene(context, width, height) {
     const t = Tree.build();
 
     context.fillStyle = rgbaToString(params.clearColor);
@@ -183,7 +183,14 @@ const sketch = () => {
       context.restore();
     }
     context.restore();
-  };
+  }
+}
+
+const sketch = () => {
+  /**
+   * @param {{ context: CanvasRenderingContext2D, width: number, height: number }}
+   */
+  return ({ context, width, height }) => Tree.drawScene(context, width, height);
 };
 
 const start = async () => {
