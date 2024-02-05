@@ -3,7 +3,7 @@ const random = require("canvas-sketch-util/random");
 const Pane = require("tweakpane").Pane;
 const settings = {
   dimensions: [2048, 2048],
-  animate: false
+  animate: false,
 };
 
 const params = {
@@ -17,8 +17,8 @@ const params = {
   sectionedBranching: false,
   branchSections: 5,
   grassEffect: false,
-  clearColor: { r: 255, g: 255, b: 255, a: 1},
-  treeColor: { r: 0, g: 0, b: 0, a: 1}
+  clearColor: { r: 255, g: 255, b: 255, a: 1 },
+  treeColor: { r: 0, g: 0, b: 0, a: 1 },
 };
 
 const createPane = (manager) => {
@@ -61,18 +61,18 @@ const createPane = (manager) => {
   folder.addInput(params, "branchSections", {
     min: 2,
     max: 20,
-    step: 1
+    step: 1,
   });
   folder.addInput(params, "grassEffect");
-  folder.addInput(params, 'clearColor')
-  folder.addInput(params, 'treeColor')
+  folder.addInput(params, "clearColor");
+  folder.addInput(params, "treeColor");
 
   pane.on("change", () => {
     manager.render();
   });
 };
 
-const rgbaToString = ({ r, g, b, a}) => `rgba(${r}, ${g}, ${b}, ${a})`; 
+const rgbaToString = ({ r, g, b, a }) => `rgba(${r}, ${g}, ${b}, ${a})`;
 
 class Tree {
   constructor(w, h, subtrees = []) {
@@ -81,13 +81,13 @@ class Tree {
     this.subtrees = subtrees;
   }
 
-  draw(context) {
+  drawBranch(context) {
     context.fillStyle = rgbaToString(params.treeColor);
     context.strokeStyle = rgbaToString(params.treeColor);
     if (params.sectionedBranching) {
       context.beginPath();
       const nodes = params.branchSections;
-      
+
       for (let i = 0; i < nodes; i++) {
         context.save();
         context.translate(0, (this.h / nodes) * i);
@@ -98,35 +98,66 @@ class Tree {
         context.restore();
       }
       context.closePath();
-
     } else {
+      context.fillRect(0, 0, this.w, this.h);
+    }
+  }
 
-      context.fillRect(0,0,this.w, this.h)
+  static draw(tree, context) {
+    tree.drawBranch(context);
+    tree.subtrees.forEach((subtree) => {
+      context.save();
+      context.translate(0, tree.h - random.range(0, tree.h / 4));
+      context.rotate(
+        (random.rangeFloor(
+          -params.branchesAngleVariation,
+          params.branchesAngleVariation
+        ) *
+          Math.PI) /
+          180
+      );
+      Tree.draw(subtree, context);
+      context.restore();
+    });
+  }
+
+  /**
+   * 
+   * @param {*} levels 
+   * @param {*} w 
+   * @param {*} h 
+   * @returns {Tree}
+   */
+  static build(levels = params.levels, w = params.width, h = params.height) {
+    const nodeCons = (width, height) => (subs) => new Tree(width, height, subs);
+    if (levels <= 0) {
+      return nodeCons(w, h)([]);
+    } else {
+      return nodeCons(
+        w,
+        h
+      )(
+        [...new Array(random.rangeFloor(2, 5))]
+          .map((_, j) =>
+            Tree.build(
+              levels - 1,
+              w * (levels / (levels + 1 + j)),
+              params.grassEffect
+                ? h / levels / (j + 1)
+                : h - ((h / levels) * j + 1)
+            )
+          )
+      );
     }
   }
 }
 
 const sketch = () => {
-  return ({ context, width, height, deltaTime }) => {
-    const t = buildTree(params.levels, params.width, params.height);
-
-    function drawTree(tree) {
-      tree.draw(context);
-      tree.subtrees.forEach((subtree) => {
-        context.save();
-        context.translate(0, tree.h - random.range(0, tree.h / 4));
-        context.rotate(
-          (random.rangeFloor(
-            -params.branchesAngleVariation,
-            params.branchesAngleVariation
-          ) *
-            Math.PI) /
-            180
-        );
-        drawTree(subtree);
-        context.restore();
-      });
-    }
+  /**
+   * @param {{ context: CanvasRenderingContext2D, width: number, height: number }}
+   */
+  return ({ context, width, height }) => {
+    const t = Tree.build();
 
     context.fillStyle = rgbaToString(params.clearColor);
     context.fillRect(0, 0, width, height);
@@ -143,12 +174,12 @@ const sketch = () => {
           Math.PI) /
           180
       );
-      const depth = random.range(1 / (params.depth * 10), params.depth / 10 + 1); 
-      context.scale(
-        depth,
-        depth
+      const depth = random.range(
+        1 / (params.depth * 10),
+        params.depth / 10 + 1
       );
-      drawTree(t);
+      context.scale(depth, depth);
+      Tree.draw(t, context);
       context.restore();
     }
     context.restore();
@@ -158,31 +189,8 @@ const sketch = () => {
 const start = async () => {
   const manager = await canvasSketch(sketch, settings);
   createPane(manager);
-  return manager
+  return manager;
 };
-
-
-function buildTree(levels = 5, w = 10, h = 400) {
-  const nodeCons = (width, height) => (subs) => new Tree(width, height, subs);
-  if (levels <= 0) {
-    return nodeCons(w, h)([]);
-  } else {
-    return nodeCons(
-      w,
-      h
-    )(
-      new Array(random.rangeFloor(2, 5))
-        .fill(null)
-        .map((_, j) =>
-          buildTree(
-            levels - 1,
-            w * (levels / (levels + 1 + j)),
-            params.grassEffect ? h / levels / (j + 1) : h - (h / levels * j + 1)
-          )
-        )
-    );
-  }
-}
 
 let currentFrameTs = 0;
 const rafce = (m, elapsed) => {
@@ -191,5 +199,5 @@ const rafce = (m, elapsed) => {
     currentFrameTs = elapsed;
   }
   requestAnimationFrame((ts) => rafce(m, ts));
-}
+};
 start().then(rafce);
