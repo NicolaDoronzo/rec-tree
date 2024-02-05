@@ -3,6 +3,7 @@ const random = require("canvas-sketch-util/random");
 const Pane = require("tweakpane").Pane;
 const settings = {
   dimensions: [2048, 2048],
+  animate: false
 };
 
 const params = {
@@ -13,9 +14,11 @@ const params = {
   branchesAngleVariation: 40,
   treesAmount: 10,
   depth: 0,
-  sectionedBranching: true,
+  sectionedBranching: false,
   branchSections: 5,
-  grassEffect: true
+  grassEffect: false,
+  clearColor: { r: 255, g: 255, b: 255, a: 1},
+  treeColor: { r: 0, g: 0, b: 0, a: 1}
 };
 
 const createPane = (manager) => {
@@ -61,11 +64,15 @@ const createPane = (manager) => {
     step: 1
   });
   folder.addInput(params, "grassEffect");
+  folder.addInput(params, 'clearColor')
+  folder.addInput(params, 'treeColor')
 
   pane.on("change", () => {
     manager.render();
   });
 };
+
+const rgbaToString = ({ r, g, b, a}) => `rgba(${r}, ${g}, ${b}, ${a})`; 
 
 class Tree {
   constructor(w, h, subtrees = []) {
@@ -75,7 +82,8 @@ class Tree {
   }
 
   draw(context) {
-    context.fillStyle = "black";
+    context.fillStyle = rgbaToString(params.treeColor);
+    context.strokeStyle = rgbaToString(params.treeColor);
     if (params.sectionedBranching) {
       context.beginPath();
       const nodes = params.branchSections;
@@ -99,7 +107,7 @@ class Tree {
 }
 
 const sketch = () => {
-  return ({ context, width, height }) => {
+  return ({ context, width, height, deltaTime }) => {
     const t = buildTree(params.levels, params.width, params.height);
 
     function drawTree(tree) {
@@ -119,13 +127,14 @@ const sketch = () => {
         context.restore();
       });
     }
-    context.fillStyle = "white";
+
+    context.fillStyle = rgbaToString(params.clearColor);
     context.fillRect(0, 0, width, height);
     context.save();
     context.rotate(Math.PI);
     for (let i = 0; i < params.treesAmount; i++) {
       context.save();
-      context.translate((width / params.treesAmount) * -i, -height * 1.1);
+      context.translate((width / params.treesAmount) * -i, -height);
       context.rotate(
         (random.rangeFloor(
           -params.mainBranchAngleVariation,
@@ -149,9 +158,9 @@ const sketch = () => {
 const start = async () => {
   const manager = await canvasSketch(sketch, settings);
   createPane(manager);
+  return manager
 };
 
-start();
 
 function buildTree(levels = 5, w = 10, h = 400) {
   const nodeCons = (width, height) => (subs) => new Tree(width, height, subs);
@@ -174,3 +183,13 @@ function buildTree(levels = 5, w = 10, h = 400) {
     );
   }
 }
+
+let currentFrameTs = 0;
+const rafce = (m, elapsed) => {
+  if (elapsed - currentFrameTs > 50) {
+    m.render();
+    currentFrameTs = elapsed;
+  }
+  requestAnimationFrame((ts) => rafce(m, ts));
+}
+start().then(rafce);
