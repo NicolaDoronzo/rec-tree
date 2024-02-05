@@ -2,8 +2,8 @@ const canvasSketch = require("canvas-sketch");
 const random = require("canvas-sketch-util/random");
 const Pane = require("tweakpane").Pane;
 const settings = {
-  dimensions: [2048, 1024],
-  animate: false,
+  width: 2048,
+  height: 1024
 };
 
 const params = {
@@ -66,8 +66,10 @@ const createPane = (manager) => {
   folder.addInput(params, "grassEffect");
   folder.addInput(params, "clearColor");
   folder.addInput(params, "treeColor");
-
-  pane.on("change", () => {
+  folder.addInput(settings, 'width')
+  folder.addInput(settings, 'height')
+  pane.on("change", (ev) => {
+    manager.update({ dimensions: [settings.width, settings.height]})
     manager.render();
   });
 };
@@ -194,7 +196,7 @@ const sketch = () => {
 };
 
 const start = async () => {
-  const manager = await canvasSketch(sketch, settings);
+  const manager = await canvasSketch(sketch, { dimensions: [settings.width, settings.height]});
   createPane(manager);
   return manager;
 };
